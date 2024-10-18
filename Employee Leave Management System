@@ -1,0 +1,156 @@
+use employee_leave_management;
+CREATE TABLE employees (
+    employee_id INT PRIMARY KEY,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    email VARCHAR(100),
+    phone VARCHAR(20),
+    department VARCHAR(50),
+    hire_date DATE,
+    leave_balance INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+show tables;
+CREATE TABLE leave_types (
+    leave_type_id INT PRIMARY KEY,
+    leave_type_name VARCHAR(50),
+    max_days_allowed INT
+);
+
+CREATE TABLE leave_requests (
+    leave_request_id INT PRIMARY KEY,
+    employee_id INT,
+    leave_type_id INT,
+    start_date DATE,
+    end_date DATE,
+    leave_duration INT,
+    status ENUM('Pending', 'Approved', 'Rejected'),
+    request_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (employee_id) REFERENCES employees(employee_id),
+    FOREIGN KEY (leave_type_id) REFERENCES leave_types(leave_type_id)
+);
+
+CREATE TABLE leave_balances (
+    employee_id INT,
+    leave_type_id INT,
+    remaining_days INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (employee_id, leave_type_id),
+    FOREIGN KEY (employee_id) REFERENCES employees(employee_id),
+    FOREIGN KEY (leave_type_id) REFERENCES leave_types(leave_type_id)
+);
+
+INSERT INTO employees (employee_id, first_name, last_name, email, phone, department, hire_date, leave_balance)
+VALUES 
+(1, 'John', 'Doe', 'john.doe@example.com', '555-1234', 'HR', '2021-01-10', 20),
+(2, 'Jane', 'Smith', 'jane.smith@example.com', '555-5678', 'Finance', '2020-03-15', 15),
+(3, 'Alice', 'Johnson', 'alice.johnson@example.com', '555-8765', 'Engineering', '2019-11-20', 25),
+(4, 'Bob', 'Williams', 'bob.williams@example.com', '555-4321', 'Marketing', '2022-06-01', 30);
+
+INSERT INTO leave_types (leave_type_id, leave_type_name, max_days_allowed)
+VALUES 
+(1, 'Annual Leave', 30),
+(2, 'Sick Leave', 10),
+(3, 'Casual Leave', 5),
+(4, 'Maternity Leave', 90);
+
+INSERT INTO leave_requests (leave_request_id, employee_id, leave_type_id, start_date, end_date, leave_duration, status)
+VALUES 
+(1, 1, 1, '2024-01-15', '2024-01-20', 5, 'Pending'),
+(2, 2, 2, '2024-02-10', '2024-02-12', 2, 'Approved'),
+(3, 3, 1, '2024-03-05', '2024-03-15', 10, 'Rejected'),
+(4, 4, 3, '2024-01-25', '2024-01-26', 1, 'Pending');
+
+INSERT INTO leave_balances (employee_id, leave_type_id, remaining_days)
+VALUES 
+(1, 1, 25),  -- John Doe, Annual Leave
+(1, 2, 10),  -- John Doe, Sick Leave
+(2, 1, 10),  -- Jane Smith, Annual Leave
+(2, 2, 8),   -- Jane Smith, Sick Leave
+(3, 1, 20),  -- Alice Johnson, Annual Leave
+(4, 1, 30),  -- Bob Williams, Annual Leave
+(4, 3, 5);   -- Bob Williams, Casual Leave
+
+ALTER TABLE leave_requests MODIFY leave_request_id INT AUTO_INCREMENT;
+
+INSERT INTO leave_requests (employee_id, leave_type_id, start_date, end_date, leave_duration, status, request_date)
+VALUES (1, 1, '2024-10-17', '2024-10-18', 2, 'Approved', CURRENT_TIMESTAMP);
+
+
+
+UPDATE leave_requests
+SET start_date = '2024-02-11', end_date = '2024-02-16', leave_duration = 6
+WHERE leave_request_id = 1 AND status = 'Pending';
+
+UPDATE leave_requests
+SET start_date = '2024-02-11', end_date = '2024-02-16', leave_duration = 6
+WHERE leave_request_id = 1 AND status = 'Pending';
+
+SELECT * FROM leave_requests;
+
+SELECT *
+FROM leave_requests
+WHERE employee_id = 1;
+
+DELETE FROM leave_requests
+WHERE leave_request_id = 1 AND status = 'Pending';
+
+SELECT *
+FROM leave_requests
+WHERE status = 'Pending' AND request_date < (CURRENT_TIMESTAMP - INTERVAL 7 DAY);
+
+SELECT *
+FROM leave_requests
+WHERE status = 'Approved' AND start_date = CURDATE();
+
+SELECT *
+FROM leave_requests
+WHERE status = 'Approved' 
+  AND start_date >= (CURDATE() - INTERVAL WEEKDAY(CURDATE()) DAY) 
+  AND start_date <= (CURDATE() + INTERVAL (6 - WEEKDAY(CURDATE())) DAY);
+
+show status;
+show variables;
+show tables; 
+
+DELIMITER //
+
+CREATE PROCEDURE GetEmployeeDetails(IN emp_Id INT)
+BEGIN
+    SELECT * FROM employees WHERE employee_id = emp_Id;
+END //
+DELIMITER ;
+CALL GetEmployeeDetails(1);
+
+DELIMITER //
+
+CREATE PROCEDURE TransferLeave2(IN emp_id_from INT, IN emp_id_to INT, IN leave_days INT)
+BEGIN
+    -- Start transaction
+    START TRANSACTION;
+
+    -- Update the leave balances
+    UPDATE leave_balances 
+    SET remaining_days = remaining_days - leave_days 
+    WHERE employee_id = emp_id_from;
+
+    UPDATE leave_balances 
+    SET remaining_days = remaining_days + leave_days 
+    WHERE employee_id = emp_id_to;
+
+    -- Commit transaction
+    COMMIT;
+END //
+
+DELIMITER ;
+
+
+CALL TransferLeave2(1, 2, 5); 
+
+describe leave_balances;
+SELECT employee_id, remaining_days FROM leave_balances WHERE employee_id IN (1, 2);
+
+
+
+
