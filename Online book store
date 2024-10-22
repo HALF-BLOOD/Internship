@@ -1,0 +1,360 @@
+show databases;
+create database bookstore;
+use bookstore;
+
+-- Books Table
+CREATE TABLE books (
+    book_id INT PRIMARY KEY,
+    title VARCHAR(255),
+    author VARCHAR(255),
+    genre VARCHAR(100),
+    publish_date DATE,
+    price DECIMAL(10, 2),
+    description TEXT
+);
+
+INSERT INTO books (book_id, title, author, genre, publish_date, price, description) VALUES
+(1, 'The Great Gatsby', 'F. Scott Fitzgerald', 'Classic', '1925-04-10', 10.99, 'A novel set in the 1920s about wealth, love, and tragedy.'),
+(2, '1984', 'George Orwell', 'Dystopian', '1949-06-08', 9.99, 'A dystopian novel about totalitarianism and surveillance.'),
+(3, 'To Kill a Mockingbird', 'Harper Lee', 'Classic', '1960-07-11', 12.99, 'A novel about racial injustice in the Deep South.'),
+(4, 'The Catcher in the Rye', 'J.D. Salinger', 'Classic', '1951-07-16', 8.99, 'A story of teenage angst and alienation.');
+
+-- Suppliers Table
+CREATE TABLE suppliers (
+    supplier_id INT PRIMARY KEY,
+    supplier_name VARCHAR(255),
+    contact_email VARCHAR(255),
+    contact_phone VARCHAR(15)
+);
+
+INSERT INTO suppliers (supplier_id, supplier_name, contact_email, contact_phone) VALUES
+(1, 'Book Distributors Inc.', 'contact@bookdistributors.com', '123-456-7890'),
+(2, 'Literary Wholesale', 'info@literarywholesale.com', '987-654-3210');
+
+-- Inventory Table
+CREATE TABLE inventory (
+    inventory_id INT PRIMARY KEY,
+    book_id INT,
+    available_copies INT,
+    supplier_id INT,
+    last_restock_date DATE,
+    FOREIGN KEY (book_id) REFERENCES books(book_id),
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id)
+);
+
+INSERT INTO inventory (inventory_id, book_id, available_copies, supplier_id, last_restock_date) VALUES
+(1, 1, 50, 1, '2024-10-01'),
+(2, 2, 30, 2, '2024-10-05'),
+(3, 3, 40, 1, '2024-09-25'),
+(4, 4, 20, 2, '2024-09-28');
+
+-- Customers Table
+CREATE TABLE customers (
+    customer_id INT PRIMARY KEY,
+    customer_name VARCHAR(255),
+    email VARCHAR(255),
+    phone VARCHAR(15),
+    address TEXT
+);
+
+INSERT INTO customers (customer_id, customer_name, email, phone, address) VALUES
+(1, 'Alice Johnson', 'alice.johnson@example.com', '555-1234', '123 Elm Street, Springfield, IL'),
+(2, 'Bob Smith', 'bob.smith@example.com', '555-5678', '456 Oak Avenue, Lincoln, NE'),
+(3, 'Charlie Brown', 'charlie.brown@example.com', '555-9876', '789 Maple Lane, Madison, WI');
+
+-- Orders Table
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    customer_id INT,
+    order_status ENUM('Pending', 'Shipped', 'Delivered', 'Canceled'),
+    payment_status ENUM('Pending', 'Paid', 'Refunded'),
+    order_date TIMESTAMP,
+    total_amount DECIMAL(10, 2),
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+);
+
+ALTER TABLE orders MODIFY order_id INT PRIMARY KEY AUTO_INCREMENT;
+ALTER TABLE orders
+ADD COLUMN discount_code_applied VARCHAR(50),  -- discount code used, if any
+ADD COLUMN order_discount_applied DECIMAL(5, 2) DEFAULT 0;  -- percentage discount applied to the order total
+
+
+INSERT INTO orders (order_id, customer_id, order_status, payment_status, order_date, total_amount) VALUES
+(1, 1, 'Shipped', 'Paid', '2024-10-10 14:35:00', 22.98),
+(2, 2, 'Pending', 'Pending', '2024-10-12 09:10:00', 12.99);
+
+-- Order Items Table
+CREATE TABLE order_items (
+    order_item_id INT PRIMARY KEY,
+    order_id INT,
+    book_id INT,
+    quantity INT,
+    price_per_unit DECIMAL(10, 2),
+    FOREIGN KEY (order_id) REFERENCES orders(order_id),
+    FOREIGN KEY (book_id) REFERENCES books(book_id)
+);
+
+ALTER TABLE order_items
+ADD COLUMN discount_applied DECIMAL(5, 2) DEFAULT 0; 
+
+
+INSERT INTO order_items (order_item_id, order_id, book_id, quantity, price_per_unit) VALUES
+(1, 1, 1, 1, 10.99),
+(2, 1, 2, 1, 9.99),
+(3, 2, 3, 1, 12.99);
+
+-- Sales Analysis Table
+CREATE TABLE sales_analysis (
+    analysis_id INT PRIMARY KEY,
+    month VARCHAR(20),
+    total_sales DECIMAL(10, 2),
+    most_popular_book_id INT,
+    total_revenue_per_author DECIMAL(10, 2),
+    FOREIGN KEY (most_popular_book_id) REFERENCES books(book_id)
+);
+
+INSERT INTO sales_analysis (analysis_id, month, total_sales, most_popular_book_id, total_revenue_per_author) VALUES
+(1, 'September 2024', 2000.00, 1, 600.00),
+(2, 'October 2024', 1500.00, 3, 500.00);
+
+-- Discounts Table
+drop table discounts;
+ CREate TABLE discounts (
+    discount_id INT PRIMARY KEY AUTO_INCREMENT,
+    discount_type ENUM('book', 'author', 'order') NOT NULL,  
+    book_id INT,      
+    author VARCHAR(255),  
+    discount_code VARCHAR(50),  
+    discount_percentage DECIMAL(5, 2) NOT NULL,  
+    start_date DATE,  
+    end_date DATE,   
+    FOREIGN KEY (book_id) REFERENCES books(book_id) ON DELETE CASCADE
+);
+
+
+INSERT INTO discounts (discount_id, book_id, author, discount_percentage, start_date, end_date) VALUES
+(1, 1, 'F. Scott Fitzgerald', 15.00, '2024-10-01', '2024-10-15'),
+(2, 2, 'George Orwell', 10.00, '2024-10-05', '2024-10-20');
+
+-- Reviews Table
+CREATE TABLE reviews (
+    review_id INT PRIMARY KEY,
+    customer_id INT,
+    book_id INT,
+    rating INT,
+    review_text TEXT,
+    review_date TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
+    FOREIGN KEY (book_id) REFERENCES books(book_id)
+);
+
+INSERT INTO reviews (review_id, customer_id, book_id, rating, review_text, review_date) VALUES
+(1, 1, 1, 5, 'A classic that everyone should read.', '2024-10-11 15:20:00'),
+(2, 2, 2, 4, 'A thought-provoking novel with a chilling vision of the future.', '2024-10-13 10:05:00');
+
+
+-- Monthly sales figures
+SELECT 
+    DATE_FORMAT(order_date, '%Y-%m') AS month,
+    SUM(total_amount) AS total_sales
+FROM 
+    orders
+WHERE 
+    payment_status = 'Paid'
+GROUP BY 
+    DATE_FORMAT(order_date, '%Y-%m')
+ORDER BY 
+    month DESC;
+
+-- most popular books
+SELECT 
+    b.book_id,
+    b.title,
+    SUM(oi.quantity) AS total_quantity_sold
+FROM 
+    order_items oi
+JOIN 
+    books b ON oi.book_id = b.book_id
+JOIN 
+    orders o ON oi.order_id = o.order_id
+WHERE 
+    o.payment_status = 'Paid'
+GROUP BY 
+    b.book_id, b.title
+ORDER BY 
+    total_quantity_sold DESC
+LIMIT 1;  -- Returns the most popular book
+
+-- to find the total revenue per author
+SELECT 
+    b.author,
+    SUM(oi.quantity * oi.price_per_unit) AS total_revenue
+FROM 
+    order_items oi
+JOIN 
+    books b ON oi.book_id = b.book_id
+JOIN 
+    orders o ON oi.order_id = o.order_id
+WHERE 
+    o.payment_status = 'Paid'
+GROUP BY 
+    b.author
+ORDER BY 
+    total_revenue DESC;
+
+-- customer reviews
+
+SELECT 
+    c.customer_name,
+    b.title AS book_title,
+    r.rating,
+    r.review_text,
+    r.review_date
+FROM 
+    reviews r
+JOIN 
+    customers c ON r.customer_id = c.customer_id
+JOIN 
+    books b ON r.book_id = b.book_id
+ORDER BY 
+    r.review_date DESC;
+    
+-- rating order
+SELECT 
+    b.book_id,
+    b.title AS book_title,
+    AVG(r.rating) AS average_rating
+FROM 
+    reviews r
+JOIN 
+    books b ON r.book_id = b.book_id
+GROUP BY 
+    b.book_id, b.title
+ORDER BY 
+    average_rating DESC;
+
+
+SELECT 
+    b.book_id,
+    b.title AS book_title,
+    AVG(r.rating) AS average_rating
+FROM 
+    reviews r
+JOIN 
+    books b ON r.book_id = b.book_id
+GROUP BY 
+    b.book_id, b.title
+ORDER BY 
+    average_rating DESC
+LIMIT 2;  -- Best-reviewed book
+
+-- stored procedure to apply discounts automatically
+DELIMITER //
+CREATE PROCEDURE apply_discount_to_order_item(IN order_id INT)
+BEGIN
+    -- Apply book or author-specific discounts to order items
+    UPDATE order_items oi
+    JOIN books b ON oi.book_id = b.book_id
+    LEFT JOIN discounts d 
+        ON (d.book_id = b.book_id OR d.author = b.author)
+        AND NOW() BETWEEN d.start_date AND d.end_date
+    SET oi.discount_applied = COALESCE(d.discount_percentage, 0)
+    WHERE oi.order_id = order_id;
+END //
+DELIMITER ;
+
+-- test discounts
+INSERT INTO discounts (discount_type, book_id, author, discount_percentage, start_date, end_date) VALUES 
+('book', 1, NULL, 10.00, '2024-01-01', '2024-12-31'),  -- 10% discount on Book A
+('author', NULL, 'Author B', 15.00, '2024-01-01', '2024-12-31');  -- 15% discount for all books by Author B
+-- test order
+INSERT INTO orders (customer_id, order_id, order_status, payment_status, order_date, total_amount) VALUES 
+(1, 11, 'Pending', 'Pending', NOW(), 0.00);
+
+-- Insert order items
+INSERT INTO order_items (order_id, order_item_id, book_id, quantity, price_per_unit) VALUES 
+(11,22, 1, 2, 20.00),  -- 2 copies of Book A
+(11,23,2, 1, 25.00);  -- 1 copy of Book B
+CALL apply_discount_to_order_item(11);  
+
+SELECT 
+    oi.order_id,
+    b.title AS book_title,
+    oi.quantity,
+    oi.price_per_unit,
+    oi.discount_applied,  -- Discount percentage applied
+    (oi.price_per_unit * oi.quantity * (1 - oi.discount_applied / 100)) AS discounted_total
+FROM 
+    order_items oi
+JOIN 
+    books b ON oi.book_id = b.book_id
+WHERE 
+    oi.order_id = 11;  
+    
+DELIMITER //
+CREATE PROCEDURE calculate_order_total(IN order_id INT)
+BEGIN
+    -- Calculate item-level total after discounts
+    UPDATE orders o
+    SET o.total_amount = (
+        SELECT SUM((oi.price_per_unit * oi.quantity * (1 - oi.discount_applied / 100)))
+        FROM order_items oi
+        WHERE oi.order_id = order_id
+    )
+    WHERE o.order_id = order_id;
+
+    -- Apply the order-level discount to the total amount
+    UPDATE orders o
+    SET o.total_amount = o.total_amount * (1 - o.order_discount_applied / 100)
+    WHERE o.order_id = order_id;
+END //
+DELIMITER ;
+
+INSERT INTO orders (customer_id, order_id, order_status, payment_status, order_date, total_amount, order_discount_applied) 
+VALUES (1, 23, 'Pending', 'Pending', NOW(), 0.00, 5.00);  
+
+INSERT INTO order_items (order_id, book_id, quantity, price_per_unit, order_item_id, discount_applied) 
+VALUES 
+(1,  1, 2, 20.00, 2, 10.00),  
+(1, 2, 1, 25.00, 2, 0.00);   
+
+SELECT * FROM order_items;
+
+call calculate_order_total 
+
+
+DELIMITER //
+CREATE TRIGGER after_order_item_insert
+AFTER INSERT ON order_items
+FOR EACH ROW
+BEGIN
+    UPDATE inventory
+    SET available_copies = available_copies - NEW.quantity
+    WHERE book_id = NEW.book_id;
+END //
+DELIMITER ;
+
+INSERT INTO order_items (order_id, order_item_id, book_id, quantity, price_per_unit, discount_applied) 
+VALUES (1,10, 1, 3, 20.00, 10.00);  -- Ordering 3 copies of Book A
+
+SELECT * FROM inventory WHERE book_id = 1;
+
+
+-- trigger to enforce rating 
+DELIMITER //
+CREATE TRIGGER before_review_insert
+BEFORE INSERT ON reviews
+FOR EACH ROW
+BEGIN
+    IF NEW.rating < 1 OR NEW.rating > 5 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Rating must be between 1 and 5';
+    END IF;
+END //
+DELIMITER ;
+
+INSERT INTO reviews (customer_id, book_id, rating, review_text, review_id, review_date) 
+VALUES (1, 1, 0, 'Great book!', 5, NOW());
+
+
+
+
