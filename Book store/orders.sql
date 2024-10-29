@@ -13,3 +13,9 @@ CREATE TABLE orders (
 INSERT INTO orders (ID, customer_id, order_status, total_amount) VALUES
 (1, 1, 'Pending', 35.00),
 (2, 2, 'Completed', 50.00);
+
+INSERT INTO orders (ID, customer_id, order_status, order_date, total_amount, created_at, updated_at)
+VALUES (6, 1, 'Pending', CURRENT_DATE, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+SELECT * FROM order_items WHERE ID = 4;
+
