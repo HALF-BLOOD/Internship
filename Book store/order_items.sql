@@ -16,3 +16,9 @@ CREATE TABLE order_items (
 INSERT INTO order_items (ID, order_id, book_id, quantity, price_at_sale, discount_applied, final_price) VALUES
 (1, 1, 1, 2, 20.00, 5.00, 35.00),
 (2, 2, 2, 1, 25.00, 5.00, 20.00);
+
+INSERT INTO order_items (ID, order_id, book_id, quantity, price_at_sale, discount_applied, final_price, created_at, updated_at)
+VALUES (4, 1, 1, 1, 100.00, 0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+
+
