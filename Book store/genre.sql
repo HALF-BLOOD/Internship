@@ -10,3 +10,20 @@ CREATE TABLE genres (
 INSERT INTO genres (ID, genre_name, description) VALUES
 (1, 'Fiction', 'Fictional works that tell stories created from the imagination.'),
 (2, 'Non-Fiction', 'Informative texts that provide factual information.');
+
+CREATE VIEW BookGenreView AS
+SELECT 
+    books.ID AS book_id,
+    books.title AS book_title,
+    genres.genre_name AS genre_name,
+    books.publish_date,
+    books.description,
+    books.created_at,
+    books.updated_at
+FROM 
+    books
+JOIN 
+    genres ON books.genre_id = genres.ID;
+
+SELECT * FROM BookGenreView;
+
