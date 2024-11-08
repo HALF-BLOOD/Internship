@@ -46,17 +46,30 @@ def generate_bill(order_id):
     if conn:
         cursor = conn.cursor()
         try:
-            # Fetch order and calculate total
-            cursor.execute("SELECT books.title, prices.price, prices.discount FROM orders JOIN books ON orders.book_id = books.ID JOIN prices ON books.ID = prices.book_id WHERE orders.ID = %s", (order_id,))
+            # Fetch the order details including title, price, and discount percentage
+            cursor.execute("""
+                SELECT books.title, prices.price, prices.discount_price
+                FROM order_items 
+                JOIN books ON order_items.book_id = books.id
+                JOIN prices ON books.id = prices.book_id
+                WHERE order_items.order_id = %s
+            """, (order_id,))
             result = cursor.fetchall()
-            total = sum((price * (1 - (discount / 100))) for title, price, discount in result)
+
+            # Calculate the total price considering the discount
+            total = sum(price * (1 - (discount / 100)) for title, price, discount in result)
+
             print(f"Order #{order_id} Total: ${total:.2f}")
+            print("\nOrder Details:")
+            for title, price, discount in result:
+                discounted_price = price * (1 - (discount / 100))
+                print(f"Book: {title}, Original Price: ${price:.2f}, Discounted Price: ${discounted_price:.2f}")
         except Exception as e:
             print(f"Error: {e}")
         finally:
             cursor.close()
             conn.close()
-
+            
 # buy_book.py
 def buy_book(book_id, customer_id, quantity):
     connection = create_connection()
